@@ -1,0 +1,7 @@
+Read `README.md`, `AGENTS.md`, and `CODEX_HANDOFF.md` completely.
+
+The development environment, known downloads, and baseline verification have already been prepared. Do not spend time rediscovering Docker, redesigning the environment, or installing dependencies on the Windows host.
+
+Do not invoke bare `docker`. Use `.\scripts\docker.ps1` as documented.
+
+Begin with the actual implementation described in `README.md`. Work end-to-end, run the project's relevant tests and quality checks, resolve ordinary implementation errors yourself, and continue until the Definition of Done is satisfied.

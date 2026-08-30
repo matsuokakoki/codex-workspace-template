@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+
+CODEX_HANDOFF.md
+
+# Common generated/local data
+data/
+results/
+artifacts/
+dist/
+build/
+coverage/
+.venv/
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.next/
+
+# Allow project-specific exceptions to be added below.
