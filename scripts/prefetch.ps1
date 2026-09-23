@@ -20,7 +20,32 @@ foreach ($item in $items) {
         throw "Each download entry must contain url and path."
     }
 
-    $destination = Join-Path $repoRoot $item.path
+    $relative = [string]$item.path
+    if ([System.IO.Path]::IsPathRooted($relative) -or $relative -match '(^|[\\/])\.\.([\\/]|$)' -or $relative -match '^[A-Za-z]:') {
+        throw "Download path must be repository-relative without '..': $relative"
+    }
+    $rootFull = [System.IO.Path]::GetFullPath($repoRoot)
+    $destination = [System.IO.Path]::GetFullPath((Join-Path $rootFull $relative))
+    if (-not $destination.StartsWith($rootFull + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Download destination is outside the repository: $relative"
+    }
+    $uri = $null
+    if (-not [System.Uri]::TryCreate([string]$item.url, [System.UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -ne 'https') {
+        throw "Download URL must be HTTPS: $($item.url)"
+    }
+    if ($item.sha256 -and [string]$item.sha256 -notmatch '^[0-9a-fA-F]{64}$') {
+        throw "SHA-256 must be 64 hexadecimal characters: $relative"
+    }
+    $cursor = $rootFull
+    foreach ($part in ($relative -split '[\\/]')) {
+        $cursor = Join-Path $cursor $part
+        if (Test-Path -LiteralPath $cursor) {
+            $attrs = (Get-Item -LiteralPath $cursor -Force).Attributes
+            if ($attrs -band [System.IO.FileAttributes]::ReparsePoint) {
+                throw "Download path contains a symlink or reparse point: $relative"
+            }
+        }
+    }
     $directory = Split-Path -Parent $destination
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
 

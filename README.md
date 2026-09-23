@@ -1,100 +1,38 @@
-# codex-workspace-template
+# Codex workspace template
 
-A reusable, **language-agnostic** starter for handing heavy implementation work to Codex without wasting tokens on environment discovery.
+Prepare a project workspace before handing an implementation task to Codex. This is a **template**, not an application or benchmark. It supplies PowerShell wrappers, a download manifest, and a handoff checklist; each new project must add its own code, environment, and verification.
 
-The guiding rule is:
+**Status:** usable starting point. Docker-based end-to-end preparation depends on a project-specific Compose file and Docker Desktop. No performance or time savings have been measured.
 
-> Prepare the environment, dependencies, downloads, and baseline checks **before** Codex starts. Then hand Codex a workspace where it can begin implementation immediately.
+## What is included
 
-This repository intentionally does **not** hard-code Python, Node.js, Firebase, LaTeX, CUDA, or any specific stack. Add only what the current project needs.
+| Path | Purpose |
+| --- | --- |
+| `scripts/docker.ps1` | Find a local Docker CLI without editing the host PATH |
+| `scripts/prefetch.ps1` | Download declared public static inputs and verify optional SHA-256 |
+| `scripts/prepare-codex.ps1` | Run Docker checks, project hooks, prefetch, and write `CODEX_HANDOFF.md` |
+| `scripts/clean.ps1` | Stop the project's Compose services; default also removes named volumes |
+| `downloads/manifest.json` | Empty by default; add only public URLs and repository-relative paths |
+| `scripts/project-*.example.ps1` | Examples to adapt into project-specific hooks |
+| `profiles/` | Planning notes for common project stacks; not installed dependencies |
+| `AGENTS.md`, `CODEX_START_PROMPT.txt` | Reusable agent handoff instructions |
 
-## What stays common across projects
+## Use in a new project
 
-These files are intended to be reused:
+1. Create a new repository from this template. Write the project's actual goal, inputs, and Definition of Done in its README.
+2. Choose a runtime and add its Dockerfile, `compose.yaml` or `docker-compose.yml`, and lockfiles. Adapt the example project hooks if needed.
+3. Declare only public static downloads in `downloads/manifest.json`. Prefer SHA-256 checksums; never put credentials or signed URLs there.
+4. Start Docker Desktop and run `./scripts/prepare-codex.ps1` from PowerShell. Review the generated `CODEX_HANDOFF.md` before starting Codex.
+5. Hand the project README and `CODEX_HANDOFF.md` to Codex. Run the project's own tests before claiming completion.
 
-- `AGENTS.md`
-- `CODEX_START_PROMPT.txt`
-- `scripts/docker.ps1`
-- `scripts/prefetch.ps1`
-- `scripts/prepare-codex.ps1`
-- `scripts/clean.ps1`
-- `docs/PRE_CODEX_CHECKLIST.md`
+`READY FOR CODEX` means the template's checks completed in that environment. It does **not** mean the project or its tests are complete. Without Docker, `prepare-codex.ps1` cannot finish; `prefetch.ps1` can still be checked separately with an empty manifest.
 
-## What changes per project
+## Cleanup and limits
 
-Usually customize or create:
+`./scripts/clean.ps1` runs Compose `down --volumes --remove-orphans` and removes **the project's named volumes**. To keep those volumes, run `./scripts/clean.ps1 -KeepVolumes`. Review the Compose project before using either command. The template does not call `docker system prune`.
 
-- `README.md` — the actual project specification
-- `Dockerfile`
-- `compose.yaml`
-- dependency/lock files (`pyproject.toml`, `uv.lock`, `package.json`, `package-lock.json`, etc.)
-- `scripts/project-prepare.ps1`
-- `scripts/project-verify.ps1`
-- `downloads/manifest.json`
+`prefetch.ps1` rejects paths outside the repository, symlink/reparse-point parents, non-HTTPS URLs, and malformed SHA-256 values. It cannot verify the trustworthiness or licence of downloaded content. Review each data source before distributing a derived project. See [manifest format](downloads/README.md).
 
-## Standard workflow
+## Public portfolio value
 
-1. Create a new repository from this template.
-2. Decide the project stack with ChatGPT.
-3. Add only the Docker/runtime/dependencies/services the project needs.
-4. Identify public datasets, model files, archives, browser binaries, etc. that can be fetched in advance.
-5. Put known public downloads in `downloads/manifest.json`.
-6. Make `scripts/project-prepare.ps1` and `scripts/project-verify.ps1` project-specific.
-7. Start Docker Desktop.
-8. Run:
-
-```powershell
-.\scripts\prepare-codex.ps1
-```
-
-9. Do **not** start Codex until the script ends with:
-
-```text
-READY FOR CODEX
-```
-
-10. Open the project in Codex and paste `CODEX_START_PROMPT.txt`.
-
-## Docker wrapper
-
-Codex must not waste time searching for Docker.
-
-Use:
-
-```powershell
-.\scripts\docker.ps1 compose ps
-```
-
-The wrapper finds Docker Desktop from PATH, the per-user installation, or the standard system-wide installation.
-
-## Project-specific hooks
-
-`prepare-codex.ps1` automatically calls these if they exist:
-
-```text
-scripts/project-prepare.ps1
-scripts/project-verify.ps1
-```
-
-Examples:
-
-- Python research: lock/sync with uv, install LaTeX inside Docker, verify imports, run pytest.
-- Next.js: `npm ci`, Playwright dependencies, lint, typecheck, smoke test.
-- Firebase: Node + Java + Firebase CLI, emulator boot check.
-- GPU ML: CUDA image, PyTorch import, `nvidia-smi`, model/data prefetch.
-
-These hooks are intentionally project-specific instead of forcing one universal environment.
-
-## Safe cleanup
-
-```powershell
-.\scripts\clean.ps1
-```
-
-To preserve named volumes:
-
-```powershell
-.\scripts\clean.ps1 -KeepVolumes
-```
-
-Avoid routine use of `docker system prune` because it can affect unrelated projects.
+The interesting design choice is the separation of host preparation from implementation: a checked handoff file records which environment and inputs were actually prepared. This repository has no shipped product, CI, or measured productivity result. Its scripts and generic prompts may be reused in a project after adapting them to that project's constraints.
