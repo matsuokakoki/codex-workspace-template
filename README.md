@@ -27,6 +27,8 @@ Prepare a project workspace before handing an implementation task to Codex. This
 
 `READY FOR CODEX` means the template's checks completed in that environment. It does **not** mean the project or its tests are complete. Without Docker, `prepare-codex.ps1` cannot finish; `prefetch.ps1` can still be checked separately with an empty manifest.
 
+For a concrete setup, see [`examples/minimal-node`](examples/minimal-node/README.md). The full Docker handoff has not been verified in this review environment.
+
 ## Cleanup and limits
 
 `./scripts/clean.ps1` runs Compose `down --volumes --remove-orphans` and removes **the project's named volumes**. To keep those volumes, run `./scripts/clean.ps1 -KeepVolumes`. Review the Compose project before using either command. The template does not call `docker system prune`.
